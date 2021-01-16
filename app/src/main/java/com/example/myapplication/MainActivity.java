@@ -3,16 +3,25 @@ package com.example.myapplication;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.PixelFormat;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
+
+import com.example.myapplication.rendering.BasicRenderer;
+import com.example.myapplication.rendering.PhongRenderer;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
@@ -51,6 +60,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     private Mat rvecs;
     private Mat tvecs;
 
+    private GLSurfaceView glSurfaceView;
+    private BasicRenderer renderer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCameraPermissionGranted();
         mOpenCvCameraView.setCvCameraViewListener(this);
-        mOpenCvCameraView.setMaxFrameSize(640, 480);
+        mOpenCvCameraView.setMaxFrameSize(320, 240);
         mOpenCvCameraView.enableView();
 
         calibrationPreferences = getSharedPreferences(CalibrateCameraActivity.CALIBRATION_PREFERENCES,
@@ -74,6 +85,53 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
         rvecs = new Mat();
         tvecs = new Mat();
+
+        // Surface view para o opengl
+        glSurfaceView = new GLSurfaceView(this);
+        renderer = new PhongRenderer(this);
+        FrameLayout frame = findViewById(R.id.layout_frame);
+
+        renderer.setMeshPosition(0.0f, 0.0f, -0.5f);
+        glSurfaceView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        glSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+        glSurfaceView.setEGLContextClientVersion(2);
+        glSurfaceView.setPreserveEGLContextOnPause(true);
+        glSurfaceView.setRenderer(renderer);
+        /*glSurfaceView.setOnTouchListener(new View.OnTouchListener() {
+
+            private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
+            private float previousX;
+            private float previousY;
+
+            @Override public boolean onTouch(View v, MotionEvent event) {
+                // MotionEvent reports input details from the touch screen
+                // and other input controls. In this case, you are only
+                // interested in events where the touch position changed.
+
+                float x = event.getX();
+                float y = event.getY();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_MOVE:
+
+                        float dx = x - previousX;
+                        float dy = y - previousY;
+
+                        renderer.yaw = renderer.yaw + (dx * TOUCH_SCALE_FACTOR);
+                        renderer.pitch = renderer.pitch + (dy * TOUCH_SCALE_FACTOR);
+                        glSurfaceView.requestRender();
+                        break;
+                }
+
+                previousX = x;
+                previousY = y;
+                return true;
+            }
+        });
+        */
+        glSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+
+        frame.addView(glSurfaceView);
     }
 
     @Override
@@ -178,8 +236,18 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             }
 
             Aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs, rvecs, tvecs);
+            // Log.d("MARKER TVEC", tvecs.dump());
+            // Log.d("MARKER TVEC", String.format("%d x %d", tvecs.rows(), tvecs.cols()));
+
             if (showEstimatedPose) {
                 for (int i = 0; i < rvecs.rows(); ++i) {
+                    int[] idx = new int[]{0, 1, 2};
+                    float x = (float) tvecs.get(i, 0)[0];
+                    float y = (float) tvecs.get(i, 0)[1];
+                    float z = (float) tvecs.get(i, 0)[2];
+                    // Log.d("MARKER TVEC", String.format("(%f, %f, %f)", x, y, z));
+                    renderer.setMeshPosition(x, -y, -z);
+                    glSurfaceView.requestRender();
                     Aruco.drawAxis(outputImage, cameraMatrix, distCoeffs, rvecs.row(i), tvecs.row(i), markerLength);
                 }
             }

@@ -69,7 +69,7 @@ public abstract class BasicRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         float ratio = (float) width / height;
-        Matrix.perspectiveM(projectionMatrix, 0, 75, ratio, 0.1f, 10.0f);
+        Matrix.perspectiveM(projectionMatrix, 0, 45, ratio, 0.1f, 1000.0f);
     }
 
     @Override public void onDrawFrame(GL10 gl) {
@@ -84,6 +84,7 @@ public abstract class BasicRenderer implements GLSurfaceView.Renderer {
         Matrix.translateM(modelMatrix, 0, meshPositionX, meshPositionY, meshPositionZ);
         Matrix.rotateM(modelMatrix, 0, yaw, 0.0f, 1.0f, 0.0f);
         Matrix.rotateM(modelMatrix, 0, pitch, 1.0f, 0.0f, 0.0f);
+        Matrix.scaleM(modelMatrix, 0, 1.0f, 1.0f, 1.0f);
 
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
         Matrix.multiplyMM(mvpMatrix, 0, mvpMatrix, 0, modelMatrix, 0);

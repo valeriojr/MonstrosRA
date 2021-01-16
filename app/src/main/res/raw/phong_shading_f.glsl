@@ -23,5 +23,7 @@ void main() {
         specular = vec4(spec, spec, spec, 1.0);
     }
 
-    gl_FragColor = ambient + diffuse + specular;
+    vec4 result = ambient + diffuse + specular;
+    result.w = 1.0;
+    gl_FragColor = result;
 }
