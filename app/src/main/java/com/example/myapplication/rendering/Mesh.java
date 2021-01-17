@@ -17,15 +17,17 @@ public class Mesh {
     private final int vbo; // vertex data
     private final int nbo; // normal data
     private final int ibo; // indices
+    private final int tbo; // texture coordinates
     private int indicesLength;
 
     public Mesh(InputStream inputStream) {
-        int nBuffers = 3;
+        int nBuffers = 4;
         int[] buffers = new int[nBuffers];
         GLES20.glGenBuffers(nBuffers, buffers, 0);
         vbo = buffers[0];
         nbo = buffers[1];
         ibo = buffers[2];
+        tbo = buffers[3];
 
         Obj obj = null;
         try {
@@ -46,6 +48,11 @@ public class Mesh {
             GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, 4 * normals.remaining(), normals,
                     GLES20.GL_STATIC_DRAW);
 
+            // Texture coordinates
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, tbo);
+            GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, 4 * texCoords.remaining(), texCoords,
+                    GLES20.GL_STATIC_DRAW);
+
             GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
 
             GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -62,6 +69,7 @@ public class Mesh {
     public void draw(BasicRenderer renderer) {
         int positionHandle = GLES20.glGetAttribLocation(renderer.getProgram(), "aPosition");
         int normalHandle = GLES20.glGetAttribLocation(renderer.getProgram(), "aNormal");
+        int texCoordHandle = GLES20.glGetAttribLocation(renderer.getProgram(), "aTexCoord");
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo);
         GLES20.glEnableVertexAttribArray(positionHandle);
@@ -71,11 +79,16 @@ public class Mesh {
         GLES20.glEnableVertexAttribArray(normalHandle);
         GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
 
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, tbo);
+        GLES20.glEnableVertexAttribArray(texCoordHandle);
+        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, 0);
+
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indicesLength, GLES20.GL_UNSIGNED_SHORT, 0);
 
         GLES20.glDisableVertexAttribArray(positionHandle);
         GLES20.glDisableVertexAttribArray(normalHandle);
+        GLES20.glDisableVertexAttribArray(texCoordHandle);
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);

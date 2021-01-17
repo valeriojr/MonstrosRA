@@ -29,6 +29,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.DetectorParameters;
 import org.opencv.aruco.Dictionary;
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -241,12 +242,19 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
             if (showEstimatedPose) {
                 for (int i = 0; i < rvecs.rows(); ++i) {
-                    int[] idx = new int[]{0, 1, 2};
                     float x = (float) tvecs.get(i, 0)[0];
                     float y = (float) tvecs.get(i, 0)[1];
                     float z = (float) tvecs.get(i, 0)[2];
                     // Log.d("MARKER TVEC", String.format("(%f, %f, %f)", x, y, z));
-                    renderer.setMeshPosition(x, -y, -z);
+                    renderer.setMeshPosition(x, -2.5f * y, -z);
+                    Mat rotationMatrix = new Mat();
+                    Mat r = new Mat();
+                    Mat q = new Mat();
+                    Calib3d.Rodrigues(rvecs.row(i), rotationMatrix);
+                    double[] eulerAngles = Calib3d.RQDecomp3x3(rotationMatrix, r, q);
+                    renderer.pitch = (float) eulerAngles[0] - 90.0f;
+                    renderer.yaw = (float) -eulerAngles[1];
+                    renderer.roll = (float) -eulerAngles[2];
                     glSurfaceView.requestRender();
                     Aruco.drawAxis(outputImage, cameraMatrix, distCoeffs, rvecs.row(i), tvecs.row(i), markerLength);
                 }
